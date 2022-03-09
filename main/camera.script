@@ -1,11 +1,48 @@
+function init(self)
+	msg.post("#camera", "acquire_camera_focus")
+	self.zoom = 0.3
+	msg.post("@render:", "use_fixed_projection", { zoom = self.zoom })
+	centre_camera()
+	self.direction = vmath.vector3()
+	self.speed = 3
+	msg.post(".", "acquire_input_focus")
+end
+
 function centre_camera(self)
 	local width = tonumber(sys.get_config("display.width"))
 	local height = tonumber(sys.get_config("display.height"))
 	go.set_position(-vmath.vector3(width/2, height/2, 0), ".")
 end
 
-function init(self)
-	msg.post("#camera", "acquire_camera_focus")
-	msg.post("@render:", "use_fixed_projection", { zoom = 0.3 })
-	centre_camera()
+function update(self, dt)
+	local movement = self.direction * self.speed
+	local pos = go.get_position()
+	go.set_position(pos + movement)
+	self.direction = vmath.vector3()
+end
+
+function on_input(self, action_id, action)
+	if action_id == hash("up") then
+		self.direction.y = 1
+	elseif action_id == hash("down") then
+		self.direction.y = -1
+	elseif action_id == hash("left") then
+		self.direction.x = -1
+	elseif action_id == hash("right") then
+		self.direction.x = 1
+	elseif action_id == hash("wheel_up") and action.pressed then
+		self.zoom = self.zoom + 0.1
+		if self.zoom > 5 then
+			self.zoom = 5
+		end
+		print(self.zoom)
+		msg.post("@render:", "use_fixed_projection", { zoom = self.zoom })
+	elseif action_id == hash("wheel_down") and action.pressed then
+		self.zoom = self.zoom - 0.1
+		if self.zoom < 0.1 then
+			self.zoom = 0.1
+		end
+		print(self.zoom)
+		msg.post("@render:", "use_fixed_projection", { zoom = self.zoom })
+	end
 end

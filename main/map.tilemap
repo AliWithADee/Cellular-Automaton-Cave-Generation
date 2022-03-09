@@ -4,6 +4,14 @@ layers {
   z: 0.0
   is_visible: 1
   cell {
+    x: -3
+    y: -3
+    tile: 0
+    h_flip: 0
+    v_flip: 0
+    rotate90: 0
+  }
+  cell {
     x: -1
     y: -1
     tile: 0
@@ -19,11 +27,35 @@ layers {
     v_flip: 0
     rotate90: 0
   }
+  cell {
+    x: 248
+    y: 248
+    tile: 0
+    h_flip: 0
+    v_flip: 0
+    rotate90: 0
+  }
 }
 layers {
   id: "cave"
   z: 0.0
   is_visible: 1
+  cell {
+    x: -1
+    y: -1
+    tile: 0
+    h_flip: 0
+    v_flip: 0
+    rotate90: 0
+  }
+  cell {
+    x: 198
+    y: 198
+    tile: 0
+    h_flip: 0
+    v_flip: 0
+    rotate90: 0
+  }
 }
 material: "/builtins/materials/tile_map.material"
 blend_mode: BLEND_MODE_ALPHA

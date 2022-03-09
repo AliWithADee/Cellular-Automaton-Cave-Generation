@@ -1,16 +1,19 @@
 MAP_SIZE = 100
-START_ALIVE = 45 -- Chance for a cell to start alive (default 45%)
-MIN_ALIVE = 4 -- Minimum number of alive neighbours to stay alive
-MIN_BIRTH = 3 -- Minimum number of alive neighbours for dead cell to become alive
+START_ALIVE = 40 -- Chance for a cell to start alive (default 45%)
+MIN_ALIVE = 3 -- Minimum number of alive neighbours to stay alive
+MIN_BIRTH = 5 -- Minimum number of alive neighbours for dead cell to become alive
 
 CAVE_LAYER = "cave"
+ALIVE = 2
+DEAD = 0
 
 function init(self)
-	tilemap.set_visible("#map", "bounds", true)
+	tilemap.set_visible("#map", "bounds", false)
 	tilemap.set_visible("#map", CAVE_LAYER, true)
 	clear_cave()
 	centre_map()
 	generate_cave()
+	draw_cave()
 	msg.post(".", "acquire_input_focus")
 end
 
@@ -31,36 +34,30 @@ end
 function on_input(self, action_id, action)
 	if action_id == hash("gen_cave") and action.pressed then
 		generate_cave()
+		draw_cave()
 	end
 end
 
 CAVE = {}
-STEPS = 1
+STEPS = 10
 
 function generate_cave()
 	print("Generating Cave...")
 	initialize_cave()
-	runSimulation()
-	draw_cave()
+	simulate()
+	clean_up_cave()
+	print("Generation complete!")
 end
 
 function initialize_cave()
 	CAVE = {}
-	for y=0,(MAP_SIZE-1),1 do
-		local row = {}
-		for x=0,(MAP_SIZE-1),1 do
-			row[x] = math.random(1, 100) < START_ALIVE
+	for x=0,(MAP_SIZE-1),1 do
+		local column = {}
+		for y=0,(MAP_SIZE-1),1 do
+			local tile = math.random(1, 100) < START_ALIVE and ALIVE or DEAD
+			column[y] = tile
 		end
-		CAVE[y] = row
-	end
-end
-
-function draw_cave()
-	for y=0,(MAP_SIZE-1),1 do
-		for x=0,(MAP_SIZE-1),1 do
-			local tile = CAVE[x][y] and 3 or 2
-			tilemap.set_tile("#map", CAVE_LAYER, x, y, tile)
-		end
+		CAVE[x] = column
 	end
 end
 
@@ -71,12 +68,9 @@ function numNeighbours(x, y)
 			if not (i == 0 and j == 0) then
 				local n_x = x+i
 				local n_y = y+j
-
 				if n_x < 0 or n_x >= MAP_SIZE or n_y < 0 or n_y >= MAP_SIZE then
 					count = count + 1
-				end
-				
-				if CAVE[n_x][n_y] then
+				elseif CAVE[n_x][n_y] == ALIVE then
 					count = count + 1
 				end
 			end
@@ -85,36 +79,56 @@ function numNeighbours(x, y)
 	return count
 end
 
-function runSimulation()
+function simulate()
 	for s=1,STEPS,1 do
-
 		local newCave = {}
-		
-		for y=0,(MAP_SIZE-1),1 do
-			local row = {}
-			
-			for x=0,(MAP_SIZE-1),1 do
+		for x=0,(MAP_SIZE-1),1 do
+			local column = {}
+			for y=0,(MAP_SIZE-1),1 do
 				local num_neighbours = numNeighbours(x, y)
-
-				if CAVE[x][y] then
+				if CAVE[x][y] == ALIVE then
 					if num_neighbours < MIN_ALIVE then
-						row[x] = false
+						column[y] = DEAD
 					else
-						row[x] = true
+						column[y] = ALIVE
 					end
-				else
+				elseif CAVE[x][y] == DEAD then
 					if num_neighbours >= MIN_BIRTH then
-						row[x] = true
+						column[y] = ALIVE
 					else
-						row[x] = false
+						column[y] = DEAD
 					end
 				end
-					
 			end
-
-			newCave[y] = row
+			newCave[x] = column
 		end
-
 		CAVE = newCave
 	end
+end
+
+function clean_up_cave()
+	print("Cleaning up cave...")
+	for x=0,(MAP_SIZE-1),1 do
+		CAVE[x][0] = ALIVE
+		CAVE[x][MAP_SIZE-1] = ALIVE
+	end
+
+	for y=0,(MAP_SIZE-1),1 do
+		CAVE[0][y] = ALIVE
+		CAVE[MAP_SIZE-1][y] = ALIVE
+	end
+	print("Clean up complete!")
+end
+
+function draw_cave()
+	print("Drawing cave...")
+	for x=0,(MAP_SIZE-1),1 do
+		for y=0,(MAP_SIZE-1),1 do
+			tilemap.set_tile("#map", CAVE_LAYER, x+2, y+2, CAVE[x][y])
+			tilemap.set_tile("#map", CAVE_LAYER, x+2, y+3, CAVE[x][y]+1)
+			tilemap.set_tile("#map", CAVE_LAYER, x+3, y+2, CAVE[x][y])
+			tilemap.set_tile("#map", CAVE_LAYER, x+3, y+3, CAVE[x][y]+1)
+		end
+	end
+	print("Finished drawing cave!")
 end
