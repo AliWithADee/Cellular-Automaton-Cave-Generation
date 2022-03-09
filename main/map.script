@@ -1,0 +1,120 @@
+MAP_SIZE = 100
+START_ALIVE = 45 -- Chance for a cell to start alive (default 45%)
+MIN_ALIVE = 4 -- Minimum number of alive neighbours to stay alive
+MIN_BIRTH = 3 -- Minimum number of alive neighbours for dead cell to become alive
+
+CAVE_LAYER = "cave"
+
+function init(self)
+	tilemap.set_visible("#map", "bounds", true)
+	tilemap.set_visible("#map", CAVE_LAYER, true)
+	clear_cave()
+	centre_map()
+	generate_cave()
+	msg.post(".", "acquire_input_focus")
+end
+
+function clear_cave()
+	for y=0,(MAP_SIZE-1),1 do
+		for x=0,(MAP_SIZE-1),1 do
+			tilemap.set_tile("#map", CAVE_LAYER, x, y, 0)
+		end
+	end
+end
+
+function centre_map()
+	local width = MAP_SIZE * 16
+	local height = MAP_SIZE * 16
+	go.set_position(-vmath.vector3(width/2, height/2, 0), ".")
+end
+
+function on_input(self, action_id, action)
+	if action_id == hash("gen_cave") and action.pressed then
+		generate_cave()
+	end
+end
+
+CAVE = {}
+STEPS = 1
+
+function generate_cave()
+	print("Generating Cave...")
+	initialize_cave()
+	runSimulation()
+	draw_cave()
+end
+
+function initialize_cave()
+	CAVE = {}
+	for y=0,(MAP_SIZE-1),1 do
+		local row = {}
+		for x=0,(MAP_SIZE-1),1 do
+			row[x] = math.random(1, 100) < START_ALIVE
+		end
+		CAVE[y] = row
+	end
+end
+
+function draw_cave()
+	for y=0,(MAP_SIZE-1),1 do
+		for x=0,(MAP_SIZE-1),1 do
+			local tile = CAVE[x][y] and 3 or 2
+			tilemap.set_tile("#map", CAVE_LAYER, x, y, tile)
+		end
+	end
+end
+
+function numNeighbours(x, y)
+	local count = 0
+	for i=-1,1,1 do
+		for j=-1,1,1 do
+			if not (i == 0 and j == 0) then
+				local n_x = x+i
+				local n_y = y+j
+
+				if n_x < 0 or n_x >= MAP_SIZE or n_y < 0 or n_y >= MAP_SIZE then
+					count = count + 1
+				end
+				
+				if CAVE[n_x][n_y] then
+					count = count + 1
+				end
+			end
+		end
+	end
+	return count
+end
+
+function runSimulation()
+	for s=1,STEPS,1 do
+
+		local newCave = {}
+		
+		for y=0,(MAP_SIZE-1),1 do
+			local row = {}
+			
+			for x=0,(MAP_SIZE-1),1 do
+				local num_neighbours = numNeighbours(x, y)
+
+				if CAVE[x][y] then
+					if num_neighbours < MIN_ALIVE then
+						row[x] = false
+					else
+						row[x] = true
+					end
+				else
+					if num_neighbours >= MIN_BIRTH then
+						row[x] = true
+					else
+						row[x] = false
+					end
+				end
+					
+			end
+
+			newCave[y] = row
+		end
+
+		CAVE = newCave
+	end
+end
