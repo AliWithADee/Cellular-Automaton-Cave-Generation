@@ -18,6 +18,10 @@ key_trigger {
   input: KEY_D
   action: "right"
 }
+key_trigger {
+  input: KEY_SPACE
+  action: "step"
+}
 mouse_trigger {
   input: MOUSE_WHEEL_UP
   action: "wheel_up"
